@@ -7,9 +7,9 @@ import Base.haskey, Base.delete!, Base.print, Base.iterate, Base.length
 
 export ThreadSafeDict
 
-""" 
-    ThreadSafeDict(pairs::Vector{Pair{K,V}})   
-Struct and constructor for ThreadSafeDict. There is one lock per Dict struct. All functions lock this lock, pass 
+"""
+    ThreadSafeDict(pairs::Vector{Pair{K,V}})
+Struct and constructor for ThreadSafeDict. There is one lock per Dict struct. All functions lock this lock, pass
 arguments to the d member Dict, unlock the spinlock, and then return what is returned by the Dict.
 """
 struct ThreadSafeDict{K, V} <: AbstractDict{K, V}
@@ -44,6 +44,13 @@ end
 function get!(dic::ThreadSafeDict, k, v)
     lock(dic.dlock)
     v = get!(dic.d, k, v)
+    unlock(dic.dlock)
+    return v
+end
+
+function get(dic::ThreadSafeDict, k, v)
+    lock(dic.dlock)
+    v = get(dic.d, k, v)
     unlock(dic.dlock)
     return v
 end
@@ -88,7 +95,7 @@ function iterate(dic::ThreadSafeDict, i)
     p = iterate(dic.d, i)
     unlock(dic.dlock)
     return p
-end  
+end
 
 function print(io::IO, dic::ThreadSafeDict)
     print(io, "Dict was ", islocked(dic.dlock) ? "locked" : "unlocked", ", contents: ")
